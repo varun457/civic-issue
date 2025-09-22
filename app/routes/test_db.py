@@ -1,12 +1,18 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from app.supabase_client import supabase
+from supabase.lib.client_options import PostgrestResponse  # optional typing
 
-router = APIRouter()
+router = APIRouter(prefix="/test", tags=["test"])
 
-@router.get("/test-db")
+@router.get("/db")
 def test_db():
     try:
-        data = supabase.table("complaints").select("*").limit(5).execute()
-        return {"rows": data.data}
+        res = supabase.table("complaints").select("*").limit(5).execute()
+
+        # ✅ Access data safely
+        if not res or not hasattr(res, "data"):
+            raise HTTPException(status_code=500, detail="Unexpected Supabase response")
+
+        return {"rows": res.data}
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
